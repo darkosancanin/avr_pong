@@ -16,13 +16,14 @@ char ball_y_direction = 1; // Stores the direction the ball is currently heading
 byte score[] = {0, 0}; // Stores the current scores for computer and user respectively
 byte leftpaddle_y, rightpaddle_y; // Stores the y position of the paddles
 byte ball_is_covering_white_area = 0; // Stores whether the ball is currently over a existing white area such as text or the middle line
+byte last_player_who_won = 0; // Stores who won the last game, this person is the first receiver in the next game
 
 void setup()
 {
     TV.begin(PAL);
     TV.select_font(font4x6);
     TV.delay_frame(60);
-    //display_introduction_screens();
+    display_introduction_screens();
     horizontal_resolution = TV.hres() - 2; // Default resolution is not visible on all TV's
     vertical_resolution = TV.vres() - 2;
     score[0] = 0;
@@ -70,32 +71,55 @@ void reset_game_display()
     byte noise = analogRead(2); // Grab a random value from one of the analog pins
   
     // Randomize the ball position and direction
-    ball_x_position = (noise & 0x04) ? ((noise & 0x08) ? horizontal_resolution/4 : (horizontal_resolution/4 + horizontal_resolution/2)) : horizontal_resolution / 2;
     ball_y_position = (noise & 0x10) ? ((noise & 0x20) ? vertical_resolution/4 : (vertical_resolution/4 + vertical_resolution/2)) : vertical_resolution / 2;
-    ball_x_direction = (noise & 0x01) ?  1 : -1;
     ball_y_direction = (noise & 0x02) ? -1 :  1;
+    ball_x_position = (last_player_who_won) ?  1 : horizontal_resolution - 1;
+    ball_x_direction = (last_player_who_won) ?  1 : -1;
   
     // Reset the paddle positions to the middle of the screen
     leftpaddle_y = vertical_resolution / 2;
-    rightpaddle_y = vertical_resolution / 2;
   
     redraw_paddles();
 }
 
+void display_you_won_screen(){
+  TV.clear_screen();
+  TV.select_font(font8x8);
+  TV.println(4, 38, "Congratulations");
+  TV.println(32, 50, "You Won!");
+  TV.select_font(font4x6);
+  TV.delay_frame(200);
+}
+
+void display_game_over_screen(){
+  TV.clear_screen();
+  TV.select_font(font8x8);
+  TV.println(24, 34, "Game Over!");
+  TV.select_font(font4x6);
+  TV.println(20, 50, "Better luck next time.");
+  TV.delay_frame(200);
+}
+
 void player_won_a_point(byte player_who_won){ 
-    score[player_who_won]++; // Increase the score of the winner
+  last_player_who_won =  player_who_won; 
+  score[player_who_won]++; // Increase the score of the winner
+    
     if (score[player_who_won] == 3) // Check if the winner of the point won the game
     {
-        TV.printPGM((player_who_won) ? (horizontal_resolution / 2 + 8) : (8), 15, PSTR("Winner!"));
-        TV.delay_frame(120);
+        TV.delay_frame(50);
+        if(player_who_won == 1){
+          display_you_won_screen();
+        }
+        else{
+          display_game_over_screen(); 
+        }
 	score[0] = 0;
         score[1] = 0;
     }
     else
     {
         TV.tone(500, 30);
-        TV.printPGM((player_who_won) ? (8) : (horizontal_resolution / 2 + 8), ball_y_position - 4, PSTR("Missed!"));
-        TV.delay_frame(40);
+        TV.delay_frame(50);
     }
 	
 	reset_game_display();
@@ -104,7 +128,7 @@ void player_won_a_point(byte player_who_won){
 void updateComputerPaddle(){
 	if (ball_x_direction == 1) return; // Don't track the ball when its heading towards the user
 	
-	if (ball_x_position > (horizontal_resolution - 50)) return; // Set the reaction delay
+	if (ball_x_position > (horizontal_resolution - 70)) return; // Set the reaction delay
 	
 	// Move the computer paddle up or down if the ball is above or below the middle of the paddle
 	if (ball_y_position > (leftpaddle_y + (PADDLE_HEIGHT / 2)) && leftpaddle_y < (vertical_resolution - PADDLE_HEIGHT)){
@@ -153,7 +177,7 @@ void loop()
     }
 
     // Read in the user paddle position from the potentiometer
-    rightpaddle_y =  map(analogRead(0), 0, 1024, 0, vertical_resolution - PADDLE_HEIGHT);
+    rightpaddle_y = map(analogRead(0), 0, 1024, 1, vertical_resolution - PADDLE_HEIGHT); 
     updateComputerPaddle();
 
     // Update the ball position
