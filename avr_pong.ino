@@ -9,6 +9,7 @@
 #define PADDLE_BUFFER 2
 
 TVout TV;
+int skill_level = 0;
 byte horizontal_resolution, vertical_resolution; // Stores the horizontal and vertical resolution being displayed
 byte ball_x_position, ball_y_position; // Stores the current position of the ball in the respective coordinate plane
 char ball_x_direction = 1; // Stores the direction the ball is currently heading in the x coordinate (1 = right, -1 = left)
@@ -16,44 +17,72 @@ char ball_y_direction = 1; // Stores the direction the ball is currently heading
 byte score[] = {0, 0}; // Stores the current scores for computer and user respectively
 byte leftpaddle_y, rightpaddle_y; // Stores the y position of the paddles
 byte ball_is_covering_white_area = 0; // Stores whether the ball is currently over a existing white area such as text or the middle line
-byte last_player_who_won = 0; // Stores who won the last game, this person is the first receiver in the next game
+byte who_served_last = 0; // Stores who served last, the serving rotates each game
+byte min_ball_y_position = 1; // The min position is when it hits the top white line which is one pixel 
+byte max_ball_y_position;
+byte min_ball_x_position = 2; // The min position is when it hits the left paddle which is two pixels
+byte max_ball_x_position;
 
 void setup()
 {
-    TV.begin(PAL);
+    TV.begin(PAL, 120, 96);
     TV.select_font(font4x6);
     TV.delay_frame(60);
     display_introduction_screens();
+    display_choose_skill_level_screen();
     horizontal_resolution = TV.hres() - 2; // Default resolution is not visible on all TV's
     vertical_resolution = TV.vres() - 2;
+    max_ball_y_position = vertical_resolution - 1; // The max position is when it hits the bottom white line which is one pixel
+    max_ball_x_position = horizontal_resolution - 2; // The max position is when it hits the right paddle which is two pixels
     score[0] = 0;
     score[1] = 0;
-    reset_game_display();
+    reset_game();
 }
 
 void display_introduction_screens()
 {
     TV.bitmap(16, 26, pong_logo);
-    TV.println(44, 57, "Created by");
-    TV.println(8, 67, "Darko, Gabriella & Charlotte");
-    TV.delay(3000);
+    TV.println(40, 57, "Created by");
+    TV.println(4, 67, "Darko, Gabriella & Charlotte");
+    TV.delay(5000);
     TV.bitmap(0,0, gabriella_and_charlotte);
-    TV.delay(3000);
+    TV.delay(5000);
+    TV.clear_screen();
+}
+
+void display_choose_skill_level_screen(){
+    TV.select_font(font6x8);
+    TV.println(6, 10, "Choose Skill Level");
+    TV.select_font(font4x6);
+    TV.println(50, 35, "Easy");
+    TV.println(50, 50, "Medium");
+    TV.println(50, 65, "Hard");
+    unsigned int startMillis=millis();
+    while((millis()-startMillis)<=10000) {
+      skill_level = map(analogRead(0), 0, 1023, 0, 2);
+      TV.draw_rect(43, 35, 1, 40, 0, 0);
+      if(skill_level == 0)
+        TV.draw_rect(43, 35, 1, 5, 1, 1);
+      else if(skill_level == 1)
+        TV.draw_rect(43, 50, 1, 5, 1, 1);
+      else if(skill_level == 2)
+        TV.draw_rect(43, 65, 1, 5, 1, 1);
+    }
     TV.clear_screen();
 }
 
 void redraw_paddles()
 {
     // Clear old paddles by drawing 1 pixel black line down each side of the screen
-    TV.draw_rect(0, 0, 1, vertical_resolution, 0, 0);
-    TV.draw_rect(horizontal_resolution-2, 0, 1, vertical_resolution, 0, 0);
+    TV.draw_rect(0, 1, 1, vertical_resolution - 2, 0, 0);
+    TV.draw_rect(horizontal_resolution-2, 1, 1, vertical_resolution - 2, 0, 0);
   
     // Draw the paddles, which are 1 pixel wide (and PADDLE_HEIGHT high) on each side of the screen
     TV.draw_rect(0, leftpaddle_y, 1, PADDLE_HEIGHT, 1, 1);
     TV.draw_rect(horizontal_resolution-2, rightpaddle_y, 1, PADDLE_HEIGHT, 1, 1);
 }
 
-void reset_game_display()
+void reset_game()
 {
     TV.clear_screen();
     
@@ -73,8 +102,9 @@ void reset_game_display()
     // Randomize the ball position and direction
     ball_y_position = (noise & 0x10) ? ((noise & 0x20) ? vertical_resolution/4 : (vertical_resolution/4 + vertical_resolution/2)) : vertical_resolution / 2;
     ball_y_direction = (noise & 0x02) ? -1 :  1;
-    ball_x_position = (last_player_who_won) ?  1 : horizontal_resolution - 1;
-    ball_x_direction = (last_player_who_won) ?  1 : -1;
+    ball_x_position = (who_served_last) ?  min_ball_x_position : max_ball_x_position;
+    ball_x_direction = (who_served_last) ?  1 : -1;
+    who_served_last = who_served_last ? 0 : 1;
   
     // Reset the paddle positions to the middle of the screen
     leftpaddle_y = vertical_resolution / 2;
@@ -85,8 +115,8 @@ void reset_game_display()
 void display_you_won_screen(){
   TV.clear_screen();
   TV.select_font(font8x8);
-  TV.println(4, 38, "Congratulations");
-  TV.println(32, 50, "You Won!");
+  TV.println(0, 38, "Congratulations");
+  TV.println(28, 50, "You Won!");
   TV.select_font(font4x6);
   TV.delay_frame(200);
 }
@@ -94,14 +124,13 @@ void display_you_won_screen(){
 void display_game_over_screen(){
   TV.clear_screen();
   TV.select_font(font8x8);
-  TV.println(24, 34, "Game Over!");
+  TV.println(20, 34, "Game Over!");
   TV.select_font(font4x6);
-  TV.println(20, 50, "Better luck next time.");
+  TV.println(16, 50, "Better luck next time.");
   TV.delay_frame(200);
 }
 
 void player_won_a_point(byte player_who_won){ 
-  last_player_who_won =  player_who_won; 
   score[player_who_won]++; // Increase the score of the winner
     
     if (score[player_who_won] == 3) // Check if the winner of the point won the game
@@ -122,7 +151,7 @@ void player_won_a_point(byte player_who_won){
         TV.delay_frame(50);
     }
 	
-	reset_game_display();
+	reset_game();
 }
 
 void updateComputerPaddle(){
@@ -142,13 +171,13 @@ void updateComputerPaddle(){
 void loop()
 {
     // Check if ball hit the top of bottom of the screen
-    if (ball_y_position == vertical_resolution - 1 || ball_y_position == 1)
+    if (ball_y_position == max_ball_y_position || ball_y_position == min_ball_y_position)
     {
         BEEP;
         ball_y_direction *= -1;
     }
     
-    if (ball_x_position <= 2) // Check if it hit the computer paddle
+    if (ball_x_position == min_ball_x_position) // Check if it hit the computer paddle
     {
         if (ball_y_position > leftpaddle_y - PADDLE_BUFFER && ball_y_position < (leftpaddle_y + PADDLE_HEIGHT + PADDLE_BUFFER) && ball_x_direction < 0 )
         {
@@ -156,7 +185,7 @@ void loop()
             ball_x_direction = 1; 
         }
     }
-    else if (ball_x_position >= horizontal_resolution - 2)  // Check if it hit the user paddle
+    else if (ball_x_position == max_ball_x_position)  // Check if it hit the user paddle
     {
         if (ball_y_position > rightpaddle_y - PADDLE_BUFFER && ball_y_position < (rightpaddle_y + PADDLE_HEIGHT + PADDLE_BUFFER) && ball_x_direction > 0 )
         {
@@ -165,12 +194,12 @@ void loop()
         }
     }
     
-    if (ball_x_position == 0) // Check if it hit the left wall
+    if (ball_x_position < min_ball_x_position) // Check if it hit the left wall
     {
         player_won_a_point(1);
         return;
     }
-    else if (ball_x_position == horizontal_resolution) // Check if it hit the right wall
+    else if (ball_x_position > max_ball_x_position) // Check if it hit the right wall
     {
         player_won_a_point(0);
         return;
