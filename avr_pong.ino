@@ -15,6 +15,8 @@
 TVout TV;
 int skill_level;
 byte paddle_height; 
+byte computer_reaction_delay;
+byte computer_loss_of_concentration_modulo_value;
 byte horizontal_resolution, vertical_resolution; // Stores the horizontal and vertical resolution being displayed
 byte ball_x_position, ball_y_position; // Stores the current position of the ball in the respective coordinate plane
 char ball_x_direction = 1; // Stores the direction the ball is currently heading in the x coordinate (1 = right, -1 = left)
@@ -64,24 +66,32 @@ void display_choose_skill_level_screen(){
     TV.println(50, 65, "Hard");
     TV.println(50, 80, "Expert");
     unsigned int startMillis=millis();
-    while((millis()-startMillis)<=3000) {
+    while((millis()-startMillis)<=2000) {
       skill_level = map(analogRead(0), 0, 1023, 0, 3);
       TV.draw_rect(43, 35, 2, 50, 0, 0);
       if(skill_level == SKILL_LEVEL_EASY){
         TV.draw_rect(43, 35, 2, 5, 1, 1);
         paddle_height = 9;
+        computer_reaction_delay = 70;
+        computer_loss_of_concentration_modulo_value = 10;
       }
       else if(skill_level == SKILL_LEVEL_MEDIUM){
         TV.draw_rect(43, 50, 2, 5, 1, 1);
         paddle_height = 7;
+        computer_reaction_delay = 60;
+        computer_loss_of_concentration_modulo_value = 11;
       }
       else if(skill_level == SKILL_LEVEL_HARD){
         TV.draw_rect(43, 65, 2, 5, 1, 1);
         paddle_height = 5;
+        computer_reaction_delay = 50;
+        computer_loss_of_concentration_modulo_value = 12;
       }
       else if(skill_level == SKILL_LEVEL_EXPERT){
         TV.draw_rect(43, 80, 2, 5, 1, 1);
         paddle_height = 3;
+        computer_reaction_delay = 40;
+        computer_loss_of_concentration_modulo_value = 13;
       }
     }
     TV.clear_screen();
@@ -128,7 +138,7 @@ void reset_game()
 void display_you_won_screen(){
   TV.clear_screen();
   TV.select_font(font8x8);
-  TV.println(28, 50, "You Won!");
+  TV.println(28, 30, "You Won!");
   TV.select_font(font4x6);
   TV.delay_frame(200);
 }
@@ -167,17 +177,17 @@ void player_won_a_point(byte player_who_won){
 }
 
 void updateComputerPaddle(){
-	if (ball_x_direction == 1) return; // Don't track the ball when its heading towards the user
+  if (ball_x_direction == 1) return; // Don't track the ball when its heading towards the user
+  if (ball_x_position > (horizontal_resolution - computer_reaction_delay)) return; // Set the reaction delay
+  if (ball_x_position % computer_loss_of_concentration_modulo_value == 0) return;
 	
-	if (ball_x_position > (horizontal_resolution - 70)) return; // Set the reaction delay
-	
-	// Move the computer paddle up or down if the ball is above or below the middle of the paddle
-	if (ball_y_position > (leftpaddle_y + (paddle_height / 2)) && leftpaddle_y < (vertical_resolution - paddle_height)){
-		leftpaddle_y++;
-	}
-	else if (ball_y_position < (leftpaddle_y + (paddle_height / 2)) && leftpaddle_y > 0){
-		leftpaddle_y--;
-	}
+  // Move the computer paddle up or down if the ball is above or below the middle of the paddle
+  if (ball_y_position > (leftpaddle_y + (paddle_height / 2)) && leftpaddle_y < (vertical_resolution - paddle_height)){
+    leftpaddle_y++;
+  }
+  else if (ball_y_position < (leftpaddle_y + (paddle_height / 2)) && leftpaddle_y > 0){
+    leftpaddle_y--;
+  }
 }
 
 void change_y_direction_of_ball(byte ball_y_position, byte paddle_y_position){  
