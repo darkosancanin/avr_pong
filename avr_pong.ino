@@ -5,11 +5,16 @@
 #include "gabriella_and_charlotte.h"
 
 #define BEEP TV.tone(2000, 30)
-#define PADDLE_HEIGHT 10
 #define PADDLE_BUFFER 2
 
+#define SKILL_LEVEL_EASY 0
+#define SKILL_LEVEL_MEDIUM 1
+#define SKILL_LEVEL_HARD 2
+#define SKILL_LEVEL_EXPERT 3
+
 TVout TV;
-int skill_level = 0;
+int skill_level;
+byte paddle_height; 
 byte horizontal_resolution, vertical_resolution; // Stores the horizontal and vertical resolution being displayed
 byte ball_x_position, ball_y_position; // Stores the current position of the ball in the respective coordinate plane
 char ball_x_direction = 1; // Stores the direction the ball is currently heading in the x coordinate (1 = right, -1 = left)
@@ -28,7 +33,7 @@ void setup()
     TV.begin(PAL, 120, 96);
     TV.select_font(font4x6);
     TV.delay_frame(60);
-    display_introduction_screens();
+    //display_introduction_screens();
     display_choose_skill_level_screen();
     horizontal_resolution = TV.hres() - 2; // Default resolution is not visible on all TV's
     vertical_resolution = TV.vres() - 2;
@@ -57,16 +62,27 @@ void display_choose_skill_level_screen(){
     TV.println(50, 35, "Easy");
     TV.println(50, 50, "Medium");
     TV.println(50, 65, "Hard");
+    TV.println(50, 80, "Expert");
     unsigned int startMillis=millis();
-    while((millis()-startMillis)<=10000) {
-      skill_level = map(analogRead(0), 0, 1023, 0, 2);
-      TV.draw_rect(43, 35, 1, 40, 0, 0);
-      if(skill_level == 0)
-        TV.draw_rect(43, 35, 1, 5, 1, 1);
-      else if(skill_level == 1)
-        TV.draw_rect(43, 50, 1, 5, 1, 1);
-      else if(skill_level == 2)
-        TV.draw_rect(43, 65, 1, 5, 1, 1);
+    while((millis()-startMillis)<=3000) {
+      skill_level = map(analogRead(0), 0, 1023, 0, 3);
+      TV.draw_rect(43, 35, 2, 50, 0, 0);
+      if(skill_level == SKILL_LEVEL_EASY){
+        TV.draw_rect(43, 35, 2, 5, 1, 1);
+        paddle_height = 9;
+      }
+      else if(skill_level == SKILL_LEVEL_MEDIUM){
+        TV.draw_rect(43, 50, 2, 5, 1, 1);
+        paddle_height = 7;
+      }
+      else if(skill_level == SKILL_LEVEL_HARD){
+        TV.draw_rect(43, 65, 2, 5, 1, 1);
+        paddle_height = 5;
+      }
+      else if(skill_level == SKILL_LEVEL_EXPERT){
+        TV.draw_rect(43, 80, 2, 5, 1, 1);
+        paddle_height = 3;
+      }
     }
     TV.clear_screen();
 }
@@ -78,8 +94,8 @@ void redraw_paddles()
     TV.draw_rect(horizontal_resolution-2, 1, 1, vertical_resolution - 2, 0, 0);
   
     // Draw the paddles, which are 1 pixel wide (and PADDLE_HEIGHT high) on each side of the screen
-    TV.draw_rect(0, leftpaddle_y, 1, PADDLE_HEIGHT, 1, 1);
-    TV.draw_rect(horizontal_resolution-2, rightpaddle_y, 1, PADDLE_HEIGHT, 1, 1);
+    TV.draw_rect(0, leftpaddle_y, 1, paddle_height, 1, 1);
+    TV.draw_rect(horizontal_resolution-2, rightpaddle_y, 1, paddle_height, 1, 1);
 }
 
 void reset_game()
@@ -106,16 +122,12 @@ void reset_game()
     ball_x_direction = (who_served_last) ?  1 : -1;
     who_served_last = who_served_last ? 0 : 1;
   
-    // Reset the paddle positions to the middle of the screen
-    leftpaddle_y = vertical_resolution / 2;
-  
     redraw_paddles();
 }
 
 void display_you_won_screen(){
   TV.clear_screen();
   TV.select_font(font8x8);
-  TV.println(0, 38, "Congratulations");
   TV.println(28, 50, "You Won!");
   TV.select_font(font4x6);
   TV.delay_frame(200);
@@ -160,38 +172,75 @@ void updateComputerPaddle(){
 	if (ball_x_position > (horizontal_resolution - 70)) return; // Set the reaction delay
 	
 	// Move the computer paddle up or down if the ball is above or below the middle of the paddle
-	if (ball_y_position > (leftpaddle_y + (PADDLE_HEIGHT / 2)) && leftpaddle_y < (vertical_resolution - PADDLE_HEIGHT)){
+	if (ball_y_position > (leftpaddle_y + (paddle_height / 2)) && leftpaddle_y < (vertical_resolution - paddle_height)){
 		leftpaddle_y++;
 	}
-	else if (ball_y_position < (leftpaddle_y + (PADDLE_HEIGHT / 2)) && leftpaddle_y > 0){
+	else if (ball_y_position < (leftpaddle_y + (paddle_height / 2)) && leftpaddle_y > 0){
 		leftpaddle_y--;
 	}
 }
 
+void change_y_direction_of_ball(byte ball_y_position, byte paddle_y_position){  
+  char distance_of_ball_from_center_of_paddle = ball_y_position - (paddle_y_position + ((paddle_height + 1) / 2));
+  if(distance_of_ball_from_center_of_paddle == 0) ball_y_direction = 0;
+  if(skill_level == SKILL_LEVEL_EASY){
+    if(distance_of_ball_from_center_of_paddle < -3) 
+      ball_y_direction = -2;
+    else if(distance_of_ball_from_center_of_paddle < 0) 
+      ball_y_direction = -1;
+    else if(distance_of_ball_from_center_of_paddle > 3) 
+      ball_y_direction = 2;
+    else if(distance_of_ball_from_center_of_paddle > 0) 
+      ball_y_direction = 1;
+  }
+  else if(skill_level == SKILL_LEVEL_MEDIUM || skill_level == SKILL_LEVEL_HARD){
+    if(distance_of_ball_from_center_of_paddle < -2) 
+      ball_y_direction = -2;
+    else if(distance_of_ball_from_center_of_paddle < 0) 
+      ball_y_direction = -1;
+    else if(distance_of_ball_from_center_of_paddle > 2) 
+      ball_y_direction = 2;
+    else if(distance_of_ball_from_center_of_paddle > 0) 
+      ball_y_direction = 1;
+  }
+  else if(skill_level == SKILL_LEVEL_EXPERT){
+    if(distance_of_ball_from_center_of_paddle < -1) 
+      ball_y_direction = -2;
+    else if(distance_of_ball_from_center_of_paddle < 0) 
+      ball_y_direction = -1;
+    else if(distance_of_ball_from_center_of_paddle > 1) 
+      ball_y_direction = 2;
+    else if(distance_of_ball_from_center_of_paddle > 0) 
+      ball_y_direction = 1;
+  }
+}
+
 void loop()
-{
-    // Check if ball hit the top of bottom of the screen
-    if (ball_y_position == max_ball_y_position || ball_y_position == min_ball_y_position)
-    {
-        BEEP;
-        ball_y_direction *= -1;
-    }
-    
+{    
     if (ball_x_position == min_ball_x_position) // Check if it hit the computer paddle
     {
-        if (ball_y_position > leftpaddle_y - PADDLE_BUFFER && ball_y_position < (leftpaddle_y + PADDLE_HEIGHT + PADDLE_BUFFER) && ball_x_direction < 0 )
+        if (ball_y_position > leftpaddle_y - PADDLE_BUFFER && ball_y_position < (leftpaddle_y + paddle_height + PADDLE_BUFFER) && ball_x_direction < 0 )
         {
-            BEEP;
-            ball_x_direction = 1; 
+           BEEP;
+           change_y_direction_of_ball(ball_y_position, leftpaddle_y);
+           ball_x_direction = 1; 
         }
     }
     else if (ball_x_position == max_ball_x_position)  // Check if it hit the user paddle
     {
-        if (ball_y_position > rightpaddle_y - PADDLE_BUFFER && ball_y_position < (rightpaddle_y + PADDLE_HEIGHT + PADDLE_BUFFER) && ball_x_direction > 0 )
+        if (ball_y_position > rightpaddle_y - PADDLE_BUFFER && ball_y_position < (rightpaddle_y + paddle_height + PADDLE_BUFFER) && ball_x_direction > 0 )
         {
-            BEEP;
-            ball_x_direction = -1; 
+          BEEP;
+          change_y_direction_of_ball(ball_y_position, rightpaddle_y);  
+          ball_x_direction = -1; 
         }
+    }
+    
+    // Check if ball hit the top of bottom of the screen
+    if (ball_y_position >= max_ball_y_position || ball_y_position <= min_ball_y_position)
+    {
+        BEEP;
+        ball_y_direction *= -1;
     }
     
     if (ball_x_position < min_ball_x_position) // Check if it hit the left wall
@@ -206,7 +255,7 @@ void loop()
     }
 
     // Read in the user paddle position from the potentiometer
-    rightpaddle_y = map(analogRead(0), 0, 1024, 1, vertical_resolution - PADDLE_HEIGHT); 
+    rightpaddle_y = map(analogRead(0), 0, 1024, 1, vertical_resolution - paddle_height); 
     updateComputerPaddle();
 
     // Update the ball position
@@ -227,3 +276,45 @@ void loop()
       
     TV.delay_frame(1);
 }
+
+/*
+EASY
+- (-5) -2
+1 (-4) -2
+2 (-3) -1
+3 (-2) -1
+4 (-1) -1
+5 (0) 0
+6 (1) 1
+7 (2) 1
+8 (3) 1 
+9 (4) 2
+- (5) 2
+
+MEDIUM
+- (-4) -2
+1 (-3) -2
+2 (-2) -1
+3 (-1) -1
+4 (0) 0
+5 (1)  1
+6 (2)  1
+7 (3)  2
+- (4)  2
+
+HARD
+- (-3) -2
+1 (-2) -1
+2 (-1) -1
+3 (0)  0
+4 (1)  1
+5 (2)  1
+- (3)  2
+
+EXPERT
+- (-2) -2
+1 (-1) -1
+2 (0)  0
+3 (1)  1
+- (2)  2
+*/
