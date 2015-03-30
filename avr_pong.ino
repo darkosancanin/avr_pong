@@ -282,7 +282,7 @@ void redraw_ball(){
 }
 
 void display_pause_screen(){
-  TV.draw_rect(43, 40, 34, 16, 0, 0);
+  TV.draw_rect(43, 40, 34, 16, 1, 0);
   TV.printPGM(48, 45, PSTR("Paused"));
   // Display until the select button is pressed which changes the mode back to MODE_PLAY
   while(mode == MODE_PAUSE) {}
@@ -293,7 +293,7 @@ void display_pause_screen(){
 }
 
 void loop()
-{    
+{ 
   if(mode == MODE_PAUSE)
   {
     display_pause_screen();
@@ -303,6 +303,9 @@ void loop()
   // Read in the user paddle position from the potentiometer
   rightpaddle_y = map(analogRead(0), 0, 1024, 1, vertical_resolution - paddle_height); 
   updateComputerPaddle();
+  
+  redraw_paddles();
+  redraw_ball();
     
   if (ball_x_position == min_ball_x_position) // Check if it hit the computer paddle
   {
@@ -340,9 +343,6 @@ void loop()
     player_won_a_point(0);
     return;
   }
-
-  redraw_ball();
-  redraw_paddles();
       
   TV.delay_frame(1);
 }
@@ -352,21 +352,13 @@ void select_button_pressed(){
   // Ignore the button press if its with the debounce delay time from its last press
   if ((millis() - select_button_last_pressed_time) > select_button_debounce_delay_ms) {
     if(mode == MODE_INTRODUCTION)
-    {
       mode = MODE_CHOOSE_SKILL_LEVEL;
-    }
     else if(mode == MODE_CHOOSE_SKILL_LEVEL)
-    {
       mode = MODE_PLAY;
-    }
     else if(mode == MODE_PLAY)
-    {
       mode = MODE_PAUSE;
-    }
     else if(mode == MODE_PAUSE)
-    {
       mode = MODE_PLAY;
-    }
     select_button_last_pressed_time = millis();
   }
 }
