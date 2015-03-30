@@ -56,7 +56,7 @@ void setup()
   horizontal_resolution = TV.hres() - 2; // Default resolution is not visible on all TV's
   vertical_resolution = TV.vres() - 2;
   max_ball_y_position = vertical_resolution - TOP_AND_BOTTOM_LINE_HEIGHT; // The max position is when it hits the bottom white line 
-  max_ball_x_position = horizontal_resolution - PADDLE_WIDTH; // The max position is when it hits the right paddle which is two pixels
+  max_ball_x_position = horizontal_resolution - PADDLE_WIDTH - 1; // The max position is when it hits the right paddle which is two pixels
   reset_scores();
   reset_game();
 }
@@ -71,6 +71,7 @@ void display_introduction_screens()
   unsigned int startMillis=millis();
   while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION) {}
   TV.bitmap(0,0, gabriella_and_charlotte);
+  startMillis=millis();
   while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION) {}
   TV.clear_screen();
 }
@@ -188,9 +189,10 @@ void display_game_over_screen(){
 void player_won_a_point(byte player_who_won){ 
   score[player_who_won]++; // Increase the score of the winner
   
-  TV.printPGM((player_who_won) ? (8) : (horizontal_resolution - 36), (vertical_resolution / 2) - 4, PSTR("Winner!"));
-  TV.printPGM((player_who_won) ? (horizontal_resolution - 36) : (8), (vertical_resolution / 2) - 4, PSTR("Missed!"));
+  TV.printPGM((player_who_won) ? (11) : (horizontal_resolution - 39), (vertical_resolution / 2) - 4, PSTR("Missed!"));
+  TV.printPGM((player_who_won) ? (horizontal_resolution - 39) : (11), (vertical_resolution / 2) - 4, PSTR("Winner!"));
   BEEP;
+  redraw_ball();
   TV.delay_frame(50);
 	
   if (score[player_who_won] == 3) // Check if the winner of the point won the game
@@ -297,6 +299,10 @@ void loop()
     display_pause_screen();
     return;
   }
+  
+  // Read in the user paddle position from the potentiometer
+  rightpaddle_y = map(analogRead(0), 0, 1024, 1, vertical_resolution - paddle_height); 
+  updateComputerPaddle();
     
   if (ball_x_position == min_ball_x_position) // Check if it hit the computer paddle
   {
@@ -335,10 +341,6 @@ void loop()
     return;
   }
 
-  // Read in the user paddle position from the potentiometer
-  rightpaddle_y = map(analogRead(0), 0, 1024, 1, vertical_resolution - paddle_height); 
-  updateComputerPaddle();
-  
   redraw_ball();
   redraw_paddles();
       
