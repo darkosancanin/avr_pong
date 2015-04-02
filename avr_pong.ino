@@ -52,7 +52,7 @@ void setup()
 {
   digitalWrite(2, HIGH); 
   attachInterrupt(0, select_button_pressed, FALLING);
-  Serial.begin(9600);
+  //Serial.begin(9600);
   TV.begin(PAL, 120, 96);
   TV.select_font(font4x6);
   TV.delay_frame(60);
@@ -417,13 +417,6 @@ void select_button_pressed()
     // If the user presses the select button 3 times within 2 seconds then this signifies they want to put the game to sleep.
     if(current_millis > 1000 && (current_millis - select_button_second_last_pressed_time) < 600)
     { 
-      Serial.print("c: ");
-  Serial.println(current_millis);
-  Serial.print("l: ");
-  Serial.println(select_button_last_pressed_time);
-  Serial.print("2: ");
-  Serial.println(select_button_second_last_pressed_time);
-  Serial.println();
       mode = MODE_SLEEP;
     }
     else
