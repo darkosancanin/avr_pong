@@ -1,5 +1,7 @@
 #include <TVout.h>
 #include <avr/pgmspace.h>
+#include <avr/power.h>
+#include <avr/sleep.h>
 #include <fontALL.h>
 #include "pong_logo.h"
 #include "gabriella_and_charlotte.h"
@@ -16,10 +18,13 @@
 #define MODE_CHOOSE_SKILL_LEVEL 1
 #define MODE_PLAY 2
 #define MODE_PAUSE 3
+#define MODE_SLEEP_WARNING 4
+#define MODE_SLEEP 5
+#define MODE_FINISHED 6
 
 // The following variables store general settings
-long select_button_last_pressed_time = 0; // Stores when the select button was last pressed
-long select_button_debounce_delay_ms = 150; // Stores the debouncing delay for the select button
+volatile unsigned long select_button_last_pressed_time = 0; // Stores when the select button was last pressed
+volatile unsigned long select_button_second_last_pressed_time = 0; // Stores the second last time the select button was last pressed
 volatile char mode = MODE_INTRODUCTION; // Stores the current mode, its values are one of the predefined MODE_xxx values
 byte horizontal_resolution, vertical_resolution; // Stores the horizontal and vertical resolution being displayed
 TVout TV;
@@ -51,12 +56,17 @@ void setup()
   TV.begin(PAL, 120, 96);
   TV.select_font(font4x6);
   TV.delay_frame(60);
-  display_introduction_screens();
-  display_choose_skill_level_screen();
   horizontal_resolution = TV.hres() - 2; // Default resolution is not visible on all TV's
   vertical_resolution = TV.vres() - 2;
   max_ball_y_position = vertical_resolution - TOP_AND_BOTTOM_LINE_HEIGHT; // The max position is when it hits the bottom white line 
   max_ball_x_position = horizontal_resolution - PADDLE_WIDTH - 1; // The max position is when it hits the right paddle which is two pixels
+  start();
+}
+
+void start()
+{
+  display_introduction_screens();
+  display_choose_skill_level_screen();  
   reset_scores();
   reset_game();
 }
@@ -64,20 +74,22 @@ void setup()
 void display_introduction_screens()
 {
   mode = MODE_INTRODUCTION;
+  TV.clear_screen();
   TV.bitmap(16, 26, pong_logo);
   TV.println(40, 57, "Created by");
   TV.println(4, 67, "Darko, Gabriella & Charlotte");
   // Display for n seconds or until the select button is pressed which changes the mode 
-  unsigned int startMillis=millis();
+  unsigned int startMillis = millis();
   while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION) {}
   TV.bitmap(0,0, gabriella_and_charlotte);
-  startMillis=millis();
+  startMillis = millis();
   while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION) {}
-  TV.clear_screen();
 }
 
-void display_choose_skill_level_screen(){
+void display_choose_skill_level_screen()
+{
   mode = MODE_CHOOSE_SKILL_LEVEL;
+  TV.clear_screen();
   TV.select_font(font6x8);
   TV.println(6, 10, "Choose Skill Level");
   TV.select_font(font4x6);
@@ -86,12 +98,12 @@ void display_choose_skill_level_screen(){
   TV.println(50, 65, "Hard");
   TV.println(50, 80, "Expert");
   // Display for n seconds or until the select button is pressed which changes the mode 
-  unsigned int startMillis=millis();
+  unsigned int startMillis = millis();
   while(((millis() - startMillis) <= 2000) && mode == MODE_CHOOSE_SKILL_LEVEL) 
   {
     skill_level = map(analogRead(0), 0, 1023, 0, 3); // Read the value that the user is selecting (0-3)
     TV.draw_rect(43, 35, 2, 50, 0, 0); // Clear all possible selections
-	// Draw the selection rectangle for the skill level they chose and set the computer skill variable settings
+    // Draw the selection rectangle for the skill level they chose and set the computer skill variable settings
     if(skill_level == SKILL_LEVEL_EASY){
       TV.draw_rect(43, 35, 2, 5, 1, 1);
       paddle_height = 9;
@@ -99,7 +111,7 @@ void display_choose_skill_level_screen(){
       computer_loss_of_concentration_modulo_value = 10;
     }
     else if(skill_level == SKILL_LEVEL_MEDIUM)
-	{
+    {
       TV.draw_rect(43, 50, 2, 5, 1, 1);
       paddle_height = 7;
       computer_reaction_delay = 60;
@@ -124,7 +136,7 @@ void display_choose_skill_level_screen(){
 void reset_scores()
 {
   score[0] = 0;
-  score[1] = 0;	
+  score[1] = 0; 
 }
 
 void redraw_paddles()
@@ -169,40 +181,50 @@ void reset_game()
   redraw_paddles();
 }
 
-void display_you_won_screen(){
+void display_you_won_screen()
+{
+  mode = MODE_FINISHED;
   TV.clear_screen();
   TV.select_font(font8x8);
   TV.println(28, 30, "You Won!");
   TV.select_font(font4x6);
-  TV.delay_frame(200);
+  // Display for n seconds or until the select button is pressed which changes the mode 
+  unsigned int startMillis = millis();
+  while(((millis() - startMillis) <= 3000) && mode == MODE_FINISHED) {}
 }
 
-void display_game_over_screen(){
+void display_game_over_screen()
+{
+  mode = MODE_FINISHED;
   TV.clear_screen();
   TV.select_font(font8x8);
   TV.println(20, 34, "Game Over!");
   TV.select_font(font4x6);
   TV.println(16, 50, "Better luck next time.");
-  TV.delay_frame(200);
+  // Display for n seconds or until the select button is pressed which changes the mode 
+  unsigned int startMillis = millis();
+  while(((millis() - startMillis) <= 3000) && mode == MODE_FINISHED) {}
 }
 
-void player_won_a_point(byte player_who_won){ 
+void player_won_a_point(byte player_who_won)
+{ 
   score[player_who_won]++; // Increase the score of the winner
-  
   TV.printPGM((player_who_won) ? (11) : (horizontal_resolution - 39), (vertical_resolution / 2) - 4, PSTR("Missed!"));
   TV.printPGM((player_who_won) ? (horizontal_resolution - 39) : (11), (vertical_resolution / 2) - 4, PSTR("Winner!"));
   BEEP;
   redraw_ball();
-  TV.delay_frame(50);
-	
-  if (score[player_who_won] == 3) // Check if the winner of the point won the game
+  unsigned int startMillis = millis();
+  while(((millis() - startMillis) <= 1000) && mode == MODE_PLAY) {}
+    
+  if (score[player_who_won] == 5) // Check if the winner of the point won the game
   {
-    TV.delay_frame(50);
+    startMillis = millis();
+    while(((millis() - startMillis) <= 1000) && mode == MODE_PLAY) {}
     if(player_who_won == 1){
       display_you_won_screen();
     }
     else
-	{
+    {
       display_game_over_screen(); 
     }
     reset_scores();
@@ -211,7 +233,8 @@ void player_won_a_point(byte player_who_won){
   reset_game();
 }
 
-void updateComputerPaddle(){
+void updateComputerPaddle()
+{
   if (ball_x_direction == 1) return; // Don't track the ball when its heading towards the user
   if (ball_x_position > (horizontal_resolution - computer_reaction_delay)) return; // Don't track the ball if its within its reaction delay
   if (ball_x_position % computer_loss_of_concentration_modulo_value == 0) return; // Ignore the ball movement every so many movements
@@ -230,7 +253,8 @@ void updateComputerPaddle(){
 // This method changes the direction of the ball based on where the ball is hit on the paddle.
 // If it hits directly in the center then the angle is straight back (0), if its right at the edges
 // then the angle is -2 or 2 and the other angle is -1 or 1.
-void change_y_direction_of_ball(byte ball_y_position, byte paddle_y_position){  
+void change_y_direction_of_ball(byte ball_y_position, byte paddle_y_position)
+{  
   char distance_of_ball_from_center_of_paddle = ball_y_position - (paddle_y_position + ((paddle_height + 1) / 2));
   if(distance_of_ball_from_center_of_paddle == 0) ball_y_direction = 0;
   if(skill_level == SKILL_LEVEL_EASY){
@@ -265,7 +289,8 @@ void change_y_direction_of_ball(byte ball_y_position, byte paddle_y_position){
   }
 }
 
-void redraw_ball(){
+void redraw_ball()
+{
   if(ball_is_covering_white_area == 0)
   {
     TV.set_pixel(ball_x_position, ball_y_position, 0); // Set the previous ball position to be black
@@ -289,24 +314,49 @@ void display_pause_screen(){
   TV.draw_rect(43, 40, 34, 16, 0, 0);
   redraw_vertical_middle_line();
   redraw_ball();
-  TV.delay_frame(1);
 }
 
-void loop()
-{ 
-  if(mode == MODE_PAUSE)
+void go_to_sleep()
+{
+  mode = MODE_SLEEP_WARNING;
+  TV.clear_screen();
+  TV.printPGM(30, 40, PSTR("Going to sleep."));
+  TV.printPGM(44, 51, PSTR("Goodbye."));
+  // Display for n seconds or until the select button is pressed which changes the mode 
+  unsigned int startMillis = millis();
+  while(((millis() - startMillis) <= 5000) && mode == MODE_SLEEP_WARNING) {}
+  // Check that the user didn't cancel going to sleep
+  cli();
+  if(mode == MODE_SLEEP_WARNING)
   {
-    display_pause_screen();
-    return;
+    mode = MODE_SLEEP;
+    ADCSRA &= ~(1 << ADEN); // Disable ADC
+    PRR = (1<<PRTWI) | (1<<PRTIM2) | (1<<PRTIM0) | (1<<PRTIM1) | (1<<PRSPI) | (1<<PRUSART0) | (1<<PRADC); // Power reduction register
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    sleep_enable();
+    sleep_bod_disable();
+    sei();
+    sleep_cpu();
+    ADCSRA |= (1<<ADEN); //Enable ADC
+    PRR = 0;
+    start();
   }
-  
+  else
+  {
+    reset_game();
+  }
+  sei();
+}
+
+void update_game_play()
+{
   // Read in the user paddle position from the potentiometer
   rightpaddle_y = map(analogRead(0), 0, 1024, 1, vertical_resolution - paddle_height); 
   updateComputerPaddle();
   
   redraw_paddles();
   redraw_ball();
-    
+  
   if (ball_x_position == min_ball_x_position) // Check if it hit the computer paddle
   {
     if (ball_y_position > leftpaddle_y - PADDLE_BUFFER && ball_y_position < (leftpaddle_y + paddle_height + PADDLE_BUFFER) && ball_x_direction < 0 )
@@ -325,15 +375,7 @@ void loop()
       ball_x_direction = -1; 
     }
   }
-    
-  // Check if ball hit the top or bottom of the screen
-  if (ball_y_position >= max_ball_y_position || ball_y_position <= min_ball_y_position)
-  {
-    BEEP;
-    ball_y_direction *= -1;
-  }
-    
-  if (ball_x_position < min_ball_x_position) // Check if it hit the left wall
+  else if (ball_x_position < min_ball_x_position) // Check if it hit the left wall
   {
     player_won_a_point(1);
     return;
@@ -343,22 +385,58 @@ void loop()
     player_won_a_point(0);
     return;
   }
-      
+  
+  // Check if ball hit the top or bottom of the screen
+  if (ball_y_position >= max_ball_y_position || ball_y_position <= min_ball_y_position)
+  {
+    BEEP;
+    ball_y_direction *= -1;
+  }
+
   TV.delay_frame(1);
 }
 
+void loop()
+{ 
+  if(mode == MODE_PLAY)
+    update_game_play();
+  else if(mode == MODE_PAUSE)
+    display_pause_screen();
+  else if(mode == MODE_SLEEP)
+    go_to_sleep();
+}
+
 // Interrupt handler for the select button 
-void select_button_pressed(){
-  // Ignore the button press if its with the debounce delay time from its last press
-  if ((millis() - select_button_last_pressed_time) > select_button_debounce_delay_ms) {
-    if(mode == MODE_INTRODUCTION)
-      mode = MODE_CHOOSE_SKILL_LEVEL;
-    else if(mode == MODE_CHOOSE_SKILL_LEVEL)
-      mode = MODE_PLAY;
-    else if(mode == MODE_PLAY)
-      mode = MODE_PAUSE;
-    else if(mode == MODE_PAUSE)
-      mode = MODE_PLAY;
-    select_button_last_pressed_time = millis();
+void select_button_pressed()
+{
+  if(mode == MODE_SLEEP) return; // Quickly return if its pressed to wake up the mcu from a sleep
+  
+  unsigned long current_millis = millis();
+  // Ignore the button press if its with the debounce delay time (150ms) from its last press
+  if ((current_millis - select_button_last_pressed_time) > 120) {
+    // If the user presses the select button 3 times within 2 seconds then this signifies they want to put the game to sleep.
+    if(current_millis > 1000 && (current_millis - select_button_second_last_pressed_time) < 600)
+    { 
+      Serial.print("c: ");
+  Serial.println(current_millis);
+  Serial.print("l: ");
+  Serial.println(select_button_last_pressed_time);
+  Serial.print("2: ");
+  Serial.println(select_button_second_last_pressed_time);
+  Serial.println();
+      mode = MODE_SLEEP;
+    }
+    else
+    {
+      // Otherwise just change the mode of the game to skip a screen or pause/unpause
+      if(mode == MODE_INTRODUCTION)
+        mode = MODE_CHOOSE_SKILL_LEVEL;
+      else if(mode == MODE_CHOOSE_SKILL_LEVEL || mode == MODE_PAUSE || mode == MODE_FINISHED || mode == MODE_SLEEP_WARNING)
+        mode = MODE_PLAY;
+      else if(mode == MODE_PLAY)
+        mode = MODE_PAUSE;
+      select_button_second_last_pressed_time = select_button_last_pressed_time;
+      select_button_last_pressed_time = millis();
+    }
   }
 }
