@@ -218,8 +218,6 @@ void player_won_a_point(byte player_who_won)
     
   if (score[player_who_won] == 5) // Check if the winner of the point won the game
   {
-    startMillis = millis();
-    while(((millis() - startMillis) <= 1000) && mode == MODE_PLAY) {}
     if(player_who_won == 1){
       display_you_won_screen();
     }
@@ -229,7 +227,7 @@ void player_won_a_point(byte player_who_won)
     }
     reset_scores();
   }
-
+  TV.delay_frame(1);
   reset_game();
 }
 
