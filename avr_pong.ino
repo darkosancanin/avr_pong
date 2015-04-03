@@ -52,7 +52,6 @@ void setup()
 {
   digitalWrite(2, HIGH); 
   attachInterrupt(0, select_button_pressed, FALLING);
-  //Serial.begin(9600);
   TV.begin(PAL, 120, 96);
   TV.select_font(font4x6);
   TV.delay_frame(60);
@@ -130,6 +129,7 @@ void display_choose_skill_level_screen()
       computer_loss_of_concentration_modulo_value = 13;
     }
   }
+  mode = MODE_PLAY;
   TV.clear_screen();
 }
 
@@ -191,6 +191,7 @@ void display_you_won_screen()
   // Display for n seconds or until the select button is pressed which changes the mode 
   unsigned int startMillis = millis();
   while(((millis() - startMillis) <= 3000) && mode == MODE_FINISHED) {}
+  mode = MODE_PLAY;
 }
 
 void display_game_over_screen()
@@ -204,6 +205,7 @@ void display_game_over_screen()
   // Display for n seconds or until the select button is pressed which changes the mode 
   unsigned int startMillis = millis();
   while(((millis() - startMillis) <= 3000) && mode == MODE_FINISHED) {}
+  mode = MODE_PLAY;
 }
 
 void player_won_a_point(byte player_who_won)
@@ -227,7 +229,7 @@ void player_won_a_point(byte player_who_won)
     }
     reset_scores();
   }
-  TV.delay_frame(1);
+  TV.delay_frame(30);
   reset_game();
 }
 
