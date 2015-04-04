@@ -10,10 +10,10 @@
 #define PADDLE_BUFFER 2
 #define PADDLE_WIDTH 2
 #define TOP_AND_BOTTOM_LINE_HEIGHT 1
-#define SKILL_LEVEL_EASY 0
-#define SKILL_LEVEL_MEDIUM 1
-#define SKILL_LEVEL_HARD 2
-#define SKILL_LEVEL_EXPERT 3
+#define SKILL_LEVEL_EASY 1
+#define SKILL_LEVEL_MEDIUM 2
+#define SKILL_LEVEL_HARD 3
+#define SKILL_LEVEL_EXPERT 4
 #define MODE_INTRODUCTION 0
 #define MODE_CHOOSE_SKILL_LEVEL 1
 #define MODE_PLAY 2
@@ -34,6 +34,7 @@ int skill_level = SKILL_LEVEL_EASY; // Stores the game skill level, its values a
 byte paddle_height; // Stores the height of the paddles, the height gets smaller and smaller based on the skill level
 byte computer_reaction_delay; // Stores the reaction time of the computer
 byte computer_loss_of_concentration_modulo_value; // The computer ignores the movement of the ball if the ball_x_position mod this value is 0
+byte game_update_frame_delay = 1; // Sets the delay time between frames. The higher the delay the slower the game play.
 
 // The following variables store game play values
 byte ball_x_position, ball_y_position; // Stores the current position of the ball in the respective coordinate plane
@@ -98,36 +99,48 @@ void display_choose_skill_level_screen()
   TV.println(50, 80, "Expert");
   // Display for n seconds or until the select button is pressed which changes the mode 
   unsigned int startMillis = millis();
-  while(((millis() - startMillis) <= 2000) && mode == MODE_CHOOSE_SKILL_LEVEL) 
+  while(((millis() - startMillis) <= 3000) && mode == MODE_CHOOSE_SKILL_LEVEL) 
   {
-    skill_level = map(analogRead(0), 0, 1023, 0, 3); // Read the value that the user is selecting (0-3)
+    int paddle_analog_position_value = analogRead(0);
     TV.draw_rect(43, 35, 2, 50, 0, 0); // Clear all possible selections
     // Draw the selection rectangle for the skill level they chose and set the computer skill variable settings
-    if(skill_level == SKILL_LEVEL_EASY){
+    if(paddle_analog_position_value >=0 && paddle_analog_position_value < 256)
+    {
+      skill_level == SKILL_LEVEL_EASY;
       TV.draw_rect(43, 35, 2, 5, 1, 1);
       paddle_height = 9;
       computer_reaction_delay = 70;
       computer_loss_of_concentration_modulo_value = 10;
+      game_update_frame_delay = 2;
     }
-    else if(skill_level == SKILL_LEVEL_MEDIUM)
+    else if(paddle_analog_position_value >= 256 && paddle_analog_position_value < 512)
     {
+      skill_level == SKILL_LEVEL_MEDIUM;
       TV.draw_rect(43, 50, 2, 5, 1, 1);
       paddle_height = 7;
       computer_reaction_delay = 60;
       computer_loss_of_concentration_modulo_value = 11;
+      game_update_frame_delay = 1;
     }
-    else if(skill_level == SKILL_LEVEL_HARD){
+    else if(paddle_analog_position_value >= 512 && paddle_analog_position_value < 768)
+    {
+      skill_level == SKILL_LEVEL_HARD;
       TV.draw_rect(43, 65, 2, 5, 1, 1);
       paddle_height = 5;
       computer_reaction_delay = 50;
       computer_loss_of_concentration_modulo_value = 12;
+      game_update_frame_delay = 1;
     }
-    else if(skill_level == SKILL_LEVEL_EXPERT){
+    else
+    {
+      skill_level == SKILL_LEVEL_EXPERT;
       TV.draw_rect(43, 80, 2, 5, 1, 1);
       paddle_height = 3;
       computer_reaction_delay = 40;
       computer_loss_of_concentration_modulo_value = 13;
+      game_update_frame_delay = 1;
     }
+    TV.delay_frame(1);
   }
   mode = MODE_PLAY;
   TV.clear_screen();
@@ -322,6 +335,7 @@ void go_to_sleep()
   TV.clear_screen();
   TV.printPGM(30, 40, PSTR("Going to sleep."));
   TV.printPGM(44, 51, PSTR("Goodbye."));
+  TV.delay_frame(30);
   // Display for n seconds or until the select button is pressed which changes the mode 
   unsigned int startMillis = millis();
   while(((millis() - startMillis) <= 5000) && mode == MODE_SLEEP_WARNING) {}
@@ -393,7 +407,7 @@ void update_game_play()
     ball_y_direction *= -1;
   }
 
-  TV.delay_frame(1);
+  TV.delay_frame(game_update_frame_delay);
 }
 
 void loop()
