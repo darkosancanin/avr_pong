@@ -1,7 +1,5 @@
 #include <TVout.h>
 #include <avr/pgmspace.h>
-#include <avr/power.h>
-#include <avr/sleep.h>
 #include <fontALL.h>
 #include "pong_logo.h"
 #include "gabriella_and_charlotte.h"
@@ -18,13 +16,10 @@
 #define MODE_CHOOSE_SKILL_LEVEL 1
 #define MODE_PLAY 2
 #define MODE_PAUSE 3
-#define MODE_SLEEP_WARNING 4
-#define MODE_SLEEP 5
-#define MODE_FINISHED 6
+#define MODE_GAME_FINISHED 4
 
 // The following variables store general settings
 volatile unsigned long select_button_last_pressed_time = 0; // Stores when the select button was last pressed
-volatile unsigned long select_button_second_last_pressed_time = 0; // Stores the second last time the select button was last pressed
 volatile char mode = MODE_INTRODUCTION; // Stores the current mode, its values are one of the predefined MODE_xxx values
 byte horizontal_resolution, vertical_resolution; // Stores the horizontal and vertical resolution being displayed
 TVout TV;
@@ -196,20 +191,20 @@ void reset_game()
 
 void display_you_won_screen()
 {
-  mode = MODE_FINISHED;
+  mode = MODE_GAME_FINISHED;
   TV.clear_screen();
   TV.select_font(font8x8);
   TV.println(28, 30, "You Won!");
   TV.select_font(font4x6);
   // Display for n seconds or until the select button is pressed which changes the mode 
   unsigned int startMillis = millis();
-  while(((millis() - startMillis) <= 3000) && mode == MODE_FINISHED) {}
+  while(((millis() - startMillis) <= 3000) && mode == MODE_GAME_FINISHED) {}
   mode = MODE_PLAY;
 }
 
 void display_game_over_screen()
 {
-  mode = MODE_FINISHED;
+  mode = MODE_GAME_FINISHED;
   TV.clear_screen();
   TV.select_font(font8x8);
   TV.println(20, 34, "Game Over!");
@@ -217,7 +212,7 @@ void display_game_over_screen()
   TV.println(16, 50, "Better luck next time.");
   // Display for n seconds or until the select button is pressed which changes the mode 
   unsigned int startMillis = millis();
-  while(((millis() - startMillis) <= 3000) && mode == MODE_FINISHED) {}
+  while(((millis() - startMillis) <= 3000) && mode == MODE_GAME_FINISHED) {}
   mode = MODE_PLAY;
 }
 
@@ -329,39 +324,6 @@ void display_pause_screen(){
   redraw_ball();
 }
 
-void go_to_sleep()
-{
-  mode = MODE_SLEEP_WARNING;
-  TV.clear_screen();
-  TV.printPGM(30, 40, PSTR("Going to sleep."));
-  TV.printPGM(44, 51, PSTR("Goodbye."));
-  TV.delay_frame(30);
-  // Display for n seconds or until the select button is pressed which changes the mode 
-  unsigned int startMillis = millis();
-  while(((millis() - startMillis) <= 5000) && mode == MODE_SLEEP_WARNING) {}
-  // Check that the user didn't cancel going to sleep
-  cli();
-  if(mode == MODE_SLEEP_WARNING)
-  {
-    mode = MODE_SLEEP;
-    ADCSRA &= ~(1 << ADEN); // Disable ADC
-    PRR = (1<<PRTWI) | (1<<PRTIM2) | (1<<PRTIM0) | (1<<PRTIM1) | (1<<PRSPI) | (1<<PRUSART0) | (1<<PRADC); // Power reduction register
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-    sleep_enable();
-    sleep_bod_disable();
-    sei();
-    sleep_cpu();
-    ADCSRA |= (1<<ADEN); //Enable ADC
-    PRR = 0;
-    start();
-  }
-  else
-  {
-    reset_game();
-  }
-  sei();
-}
-
 void update_game_play()
 {
   // Read in the user paddle position from the potentiometer
@@ -416,34 +378,20 @@ void loop()
     update_game_play();
   else if(mode == MODE_PAUSE)
     display_pause_screen();
-  else if(mode == MODE_SLEEP)
-    go_to_sleep();
 }
 
 // Interrupt handler for the select button 
 void select_button_pressed()
 {
-  if(mode == MODE_SLEEP) return; // Quickly return if its pressed to wake up the mcu from a sleep
-  
   unsigned long current_millis = millis();
-  // Ignore the button press if its with the debounce delay time (150ms) from its last press
+  // Ignore the button press if its with the debounce delay time (120ms) from its last press
   if ((current_millis - select_button_last_pressed_time) > 120) {
-    // If the user presses the select button 3 times within 2 seconds then this signifies they want to put the game to sleep.
-    if(current_millis > 1000 && (current_millis - select_button_second_last_pressed_time) < 600)
-    { 
-      mode = MODE_SLEEP;
-    }
-    else
-    {
-      // Otherwise just change the mode of the game to skip a screen or pause/unpause
-      if(mode == MODE_INTRODUCTION)
-        mode = MODE_CHOOSE_SKILL_LEVEL;
-      else if(mode == MODE_CHOOSE_SKILL_LEVEL || mode == MODE_PAUSE || mode == MODE_FINISHED || mode == MODE_SLEEP_WARNING)
-        mode = MODE_PLAY;
-      else if(mode == MODE_PLAY)
-        mode = MODE_PAUSE;
-      select_button_second_last_pressed_time = select_button_last_pressed_time;
-      select_button_last_pressed_time = millis();
-    }
+    if(mode == MODE_INTRODUCTION)
+      mode = MODE_CHOOSE_SKILL_LEVEL;
+    else if(mode == MODE_CHOOSE_SKILL_LEVEL || mode == MODE_PAUSE || mode == MODE_GAME_FINISHED)
+      mode = MODE_PLAY;
+    else if(mode == MODE_PLAY)
+      mode = MODE_PAUSE;
+    select_button_last_pressed_time = millis();
   }
 }
