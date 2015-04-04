@@ -73,13 +73,16 @@ void display_introduction_screens()
   TV.bitmap(16, 26, pong_logo);
   TV.println(40, 57, "Created by");
   TV.println(4, 67, "Darko, Gabriella & Charlotte");
-  // Display for n seconds or until the select button is pressed which changes the mode 
-  unsigned int startMillis = millis();
-  while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION_SCREEN_ONE) {}
+  wait_for_period_or_until_mode_changed(3000, MODE_INTRODUCTION_SCREEN_ONE);
   mode = MODE_INTRODUCTION_SCREEN_TWO;
   TV.bitmap(0,0, gabriella_and_charlotte);
-  startMillis = millis();
-  while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION_SCREEN_TWO) {}
+  wait_for_period_or_until_mode_changed(3000, MODE_INTRODUCTION_SCREEN_TWO);
+}
+
+void wait_for_period_or_until_mode_changed(int wait_period, char mode)
+{
+  unsigned int startMillis = millis();
+  while(((millis() - startMillis) <= wait_period) && mode ==  mode) {}
 }
 
 void display_choose_skill_level_screen()
@@ -198,8 +201,7 @@ void display_you_won_screen()
   TV.println(28, 30, "You Won!");
   TV.select_font(font4x6);
   // Display for n seconds or until the select button is pressed which changes the mode 
-  unsigned int startMillis = millis();
-  while(((millis() - startMillis) <= 3000) && mode == MODE_GAME_FINISHED) {}
+  wait_for_period_or_until_mode_changed(3000, MODE_GAME_FINISHED);
   mode = MODE_PLAY;
 }
 
@@ -212,8 +214,7 @@ void display_game_over_screen()
   TV.select_font(font4x6);
   TV.println(16, 50, "Better luck next time.");
   // Display for n seconds or until the select button is pressed which changes the mode 
-  unsigned int startMillis = millis();
-  while(((millis() - startMillis) <= 3000) && mode == MODE_GAME_FINISHED) {}
+  wait_for_period_or_until_mode_changed(3000, MODE_GAME_FINISHED);
   mode = MODE_PLAY;
 }
 
@@ -224,8 +225,7 @@ void player_won_a_point(byte player_who_won)
   TV.printPGM((player_who_won) ? (horizontal_resolution - 39) : (11), (vertical_resolution / 2) - 4, PSTR("Winner!"));
   BEEP;
   redraw_ball();
-  unsigned int startMillis = millis();
-  while(((millis() - startMillis) <= 1000) && mode == MODE_PLAY) {}
+  wait_for_period_or_until_mode_changed(3000, MODE_PLAY);
     
   if (score[player_who_won] == 5) // Check if the winner of the point won the game
   {
