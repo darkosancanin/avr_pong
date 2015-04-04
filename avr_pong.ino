@@ -12,15 +12,16 @@
 #define SKILL_LEVEL_MEDIUM 2
 #define SKILL_LEVEL_HARD 3
 #define SKILL_LEVEL_EXPERT 4
-#define MODE_INTRODUCTION 0
-#define MODE_CHOOSE_SKILL_LEVEL 1
-#define MODE_PLAY 2
-#define MODE_PAUSE 3
-#define MODE_GAME_FINISHED 4
+#define MODE_INTRODUCTION_SCREEN_ONE 0
+#define MODE_INTRODUCTION_SCREEN_TWO 1
+#define MODE_CHOOSE_SKILL_LEVEL 2
+#define MODE_PLAY 3
+#define MODE_PAUSE 4
+#define MODE_GAME_FINISHED 5
 
 // The following variables store general settings
 volatile unsigned long select_button_last_pressed_time = 0; // Stores when the select button was last pressed
-volatile char mode = MODE_INTRODUCTION; // Stores the current mode, its values are one of the predefined MODE_xxx values
+volatile char mode = MODE_INTRODUCTION_SCREEN_ONE; // Stores the current mode, its values are one of the predefined MODE_xxx values
 byte horizontal_resolution, vertical_resolution; // Stores the horizontal and vertical resolution being displayed
 TVout TV;
 
@@ -50,7 +51,6 @@ void setup()
   attachInterrupt(0, select_button_pressed, FALLING);
   TV.begin(PAL, 120, 96);
   TV.select_font(font4x6);
-  TV.delay_frame(60);
   horizontal_resolution = TV.hres() - 2; // Default resolution is not visible on all TV's
   vertical_resolution = TV.vres() - 2;
   max_ball_y_position = vertical_resolution - TOP_AND_BOTTOM_LINE_HEIGHT; // The max position is when it hits the bottom white line 
@@ -68,17 +68,18 @@ void start()
 
 void display_introduction_screens()
 {
-  mode = MODE_INTRODUCTION;
+  mode = MODE_INTRODUCTION_SCREEN_ONE;
   TV.clear_screen();
   TV.bitmap(16, 26, pong_logo);
   TV.println(40, 57, "Created by");
   TV.println(4, 67, "Darko, Gabriella & Charlotte");
   // Display for n seconds or until the select button is pressed which changes the mode 
   unsigned int startMillis = millis();
-  while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION) {}
+  while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION_SCREEN_ONE) {}
+  mode = MODE_INTRODUCTION_SCREEN_TWO;
   TV.bitmap(0,0, gabriella_and_charlotte);
   startMillis = millis();
-  while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION) {}
+  while(((millis() - startMillis) <= 3000) && mode == MODE_INTRODUCTION_SCREEN_TWO) {}
 }
 
 void display_choose_skill_level_screen()
@@ -237,7 +238,7 @@ void player_won_a_point(byte player_who_won)
     }
     reset_scores();
   }
-  TV.delay_frame(30);
+  TV.delay_frame(20);
   reset_game();
 }
 
@@ -386,7 +387,9 @@ void select_button_pressed()
   unsigned long current_millis = millis();
   // Ignore the button press if its with the debounce delay time (120ms) from its last press
   if ((current_millis - select_button_last_pressed_time) > 120) {
-    if(mode == MODE_INTRODUCTION)
+    if(mode == MODE_INTRODUCTION_SCREEN_ONE)
+      mode = MODE_INTRODUCTION_SCREEN_TWO;
+    else if(mode == MODE_INTRODUCTION_SCREEN_TWO)
       mode = MODE_CHOOSE_SKILL_LEVEL;
     else if(mode == MODE_CHOOSE_SKILL_LEVEL || mode == MODE_PAUSE || mode == MODE_GAME_FINISHED)
       mode = MODE_PLAY;
