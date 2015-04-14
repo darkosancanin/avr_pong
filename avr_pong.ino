@@ -99,7 +99,7 @@ void display_choose_skill_level_screen()
   unsigned int startMillis = millis();
   while(((millis() - startMillis) <= 3000) && mode == MODE_CHOOSE_SKILL_LEVEL) 
   {
-    int paddle_analog_position_value = analogRead(0);
+    int paddle_analog_position_value = analogRead(5);
     TV.draw_rect(43, 40, 2, 40, 0, 0); // Clear all possible selections
     // Draw the selection rectangle for the skill level they chose and set the computer skill variable settings
     if(paddle_analog_position_value >=0 && paddle_analog_position_value < 341)
@@ -325,7 +325,7 @@ void display_pause_screen(){
 void update_game_play()
 {
   // Read in the user paddle position from the potentiometer
-  rightpaddle_y = map(analogRead(0), 0, 1024, 1, vertical_resolution - paddle_height); 
+  rightpaddle_y = map(analogRead(5), 0, 1024, 1, vertical_resolution - paddle_height); 
   updateComputerPaddle();
   
   redraw_paddles();
