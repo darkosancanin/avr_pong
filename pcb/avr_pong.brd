@@ -151,7 +151,6 @@
 <text x="34.544" y="10.922" size="0.762" layer="21" font="vector">16MHz</text>
 <text x="58.42" y="20.955" size="1.27" layer="21" font="vector" rot="R180">Reset</text>
 <text x="52.705" y="8.255" size="1.27" layer="21" font="vector">Select</text>
-<text x="13.97" y="46.355" size="1.27" layer="21" font="vector" rot="R90">8-12 VDC</text>
 <text x="59.69" y="45.085" size="1.27" layer="21" font="vector" rot="R90">April 2015</text>
 <text x="2.54" y="10.795" size="1.27" layer="21" font="vector" rot="R90">Power</text>
 <text x="3.81" y="31.75" size="1.27" layer="21" font="vector">Off    On</text>
@@ -165,6 +164,7 @@ Charlotte Sancanin</text>
 Darko, Gabriella &amp;
 Charlotte Sancanin</text>
 <text x="45.085" y="55.245" size="1.27" layer="22" font="vector" rot="MR0">Revision 1.0   April 2015</text>
+<text x="13.97" y="46.355" size="1.27" layer="21" font="vector" rot="R90">7-12 VDC</text>
 </plain>
 <libraries>
 <library name="SparkFun-Capacitors">
