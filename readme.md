@@ -23,4 +23,4 @@ Arduino based implementation of the classic game PONG.
 - The user paddle position is controlled by a analog to digital conversion reading from a 10K Ohm potentiometer.
 
 ### Schematic
-![Schematic](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/schematic.png)
+![Schematic](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/schematic.PNG)
