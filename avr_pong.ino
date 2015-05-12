@@ -14,6 +14,7 @@
 #define SKILL_LEVEL_HARD 3
 #define MODE_INTRODUCTION_SCREEN_ONE 0
 #define MODE_INTRODUCTION_SCREEN_TWO 1
+#define MODE_INTRODUCTION_SCREEN_THREE 6
 #define MODE_CHOOSE_SKILL_LEVEL 2
 #define MODE_PLAY 3
 #define MODE_PAUSE 4
@@ -77,6 +78,13 @@ void display_introduction_screens()
   mode = MODE_INTRODUCTION_SCREEN_TWO;
   TV.bitmap(0,0, gabriella_and_charlotte);
   wait_for_period_or_until_mode_changed(3000, MODE_INTRODUCTION_SCREEN_TWO);
+  mode = MODE_INTRODUCTION_SCREEN_THREE;
+  TV.clear_screen();
+  TV.select_font(font6x8);
+  TV.println(33, 37, "For Xavier,");
+  TV.println(15, 51, "Declan & Sienna");
+  TV.select_font(font4x6);
+  wait_for_period_or_until_mode_changed(3000, MODE_INTRODUCTION_SCREEN_THREE);
 }
 
 void wait_for_period_or_until_mode_changed(int wait_period, char current_mode)
@@ -387,6 +395,8 @@ void select_button_pressed()
     if(mode == MODE_INTRODUCTION_SCREEN_ONE)
       mode = MODE_INTRODUCTION_SCREEN_TWO;
     else if(mode == MODE_INTRODUCTION_SCREEN_TWO)
+      mode = MODE_INTRODUCTION_SCREEN_THREE;
+    else if(mode == MODE_INTRODUCTION_SCREEN_THREE)
       mode = MODE_CHOOSE_SKILL_LEVEL;
     else if(mode == MODE_CHOOSE_SKILL_LEVEL || mode == MODE_PAUSE || mode == MODE_GAME_FINISHED)
       mode = MODE_PLAY;
