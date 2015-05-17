@@ -23,4 +23,34 @@ Arduino based implementation of the classic game PONG.
 - The user paddle position is controlled by a analog to digital conversion reading from a 10K Ohm potentiometer.
 
 ### Schematic
-![Schematic](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/schematic.PNG)
+![Schematic](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/schematic.png)
+
+### Breadboard
+![Angled View](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/breadboard_angle.png)
+
+![Top View](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/breadboard_top.png)
+
+![Back View](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/breadboard_back.png)
+
+### TV
+![Introduction Screen](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/tv_1.png)
+
+![Introduction Screen Two](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/tv_2.png)
+
+![Game Play](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/tv_3.png)
+
+![Paused Screen](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/tv_4.png)
+
+![Game Over Screen](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/tv_5.png)
+
+### PCB Layout
+![Top](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/pcb_top.png)
+
+![Bottom](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/pcb_bottom.png)
+
+### Final Product
+![Top View](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/final_top.png)
+
+![Back View](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/final_back.png)
+
+![Front View](https://raw.githubusercontent.com/darkosancanin/avr_apple_remote/master/images/final_front.png)
