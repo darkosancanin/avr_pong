@@ -44,9 +44,9 @@ Arduino based implementation of the classic game PONG.
 ![Game Over Screen](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/tv_5.png)
 
 ### PCB Layout
-![Top](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/pcb_top.png)
+![Top](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/pcb_front.png)
 
-![Bottom](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/pcb_bottom.png)
+![Bottom](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/pcb_back.png)
 
 ### Final Product
 ![Top View](https://raw.githubusercontent.com/darkosancanin/avr_pong/master/images/final_top.png)
