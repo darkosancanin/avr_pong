@@ -1,7 +1,7 @@
 ### Overview 
-Arduino based implementation of the classic game PONG.
+ATmega328 based implementation of the classic game PONG with hardware design. The implementation of the game is a one player game with the ability to choose the skill level for the computer AI. The user paddle input control in hardware is done via a potentiometer with the TV and audio signal being output via a RCA connector and the video encoded using the PAL standard.
 
-### PAL Overview
+### PAL Signal Overview
 - The PAL TV signal in the game is generated completely by the TVOut Arduino library (https://code.google.com/p/arduino-tvout/). The overview below is purely for the sake of learning.
 - PAL (Phase Alternating Line) requires 625 scanlines to create one image on the screen.
 - Not all 625 lines can be seen, some are used for sync pulses (and later for teletext etc), ~576 lines are visible.
